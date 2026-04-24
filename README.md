@@ -2,6 +2,19 @@
 
 **CS 6140 — Machine Learning | Course Project**
 
+**Team Members**
+
+Team Member 1  
+Name: Mandar Bangalore Arun  
+NUID: 002511728  
+Email: bangalorearun.m@northeastern.edu
+
+Team Member 2  
+Name: Shashank Jajimoggala  
+NUID: 002570569  
+Email: jajimoggala.s@northeastern.edu 
+
+
 ---
 
 ## Overview
