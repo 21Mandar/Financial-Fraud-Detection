@@ -2,6 +2,8 @@
 
 **CS 6140 — Machine Learning | Course Project**
 
+---
+
 ## Overview
 
 A two-stage machine learning pipeline for detecting financial fraud in the IEEE-CIS Fraud Detection dataset (~590K transactions, ~430 features, 3.5% fraud rate).
@@ -16,15 +18,69 @@ A two-stage machine learning pipeline for detecting financial fraud in the IEEE-
 3. **Q3:** Does adding anomaly scores as features improve fraud classifier performance?
 4. **Q4:** Does the GNN outperform tabular models by leveraging transaction graph structure?
 
-## Results Summary
+---
 
-### Stage 1: Regression
+## Exploratory Data Analysis
+
+### Class Distribution
+
+The dataset exhibits severe class imbalance — only 3.5% of transactions are fraudulent.
+
+![Class Distribution](figures/eda/class_distribution.png)
+
+### Missing Values
+
+Many identity features have >85% missing values. Columns exceeding 80% missingness are dropped during preprocessing.
+
+![Missing Values](figures/eda/missing_values.png)
+
+### Transaction Amount Distribution
+
+Log-transformed transaction amounts reveal distinct distribution patterns between fraud and non-fraud classes.
+
+![Transaction Amount by Class](figures/eda/transaction_amount_by_class.png)
+
+![Transaction Amount KDE](figures/eda/transaction_amount_kde.png)
+
+### Temporal Patterns
+
+Non-fraud transactions follow a clear diurnal pattern (low activity during business hours, high in evenings). Fraud transactions show a flatter distribution with spikes during late night hours.
+
+![Temporal Patterns](figures/eda/temporal_patterns.png)
+
+![Fraud Rate by Hour](figures/eda/fraud_rate_by_hour.png)
+
+### Categorical Feature Analysis
+
+Fraud rates vary significantly by card network (Discover highest at ~7.8%) and product type (ProductCD 'C' at ~11.5%).
+
+![Categorical Fraud Rates](figures/eda/categorical_fraud_rates.png)
+
+### Feature Correlations
+
+The top V-features show high multicollinearity (V257-V246: r=0.91), suggesting dimensionality reduction or careful feature selection is needed.
+
+![Correlation Heatmap](figures/eda/correlation_heatmap.png)
+
+![V-Feature Correlation](figures/eda/v_feature_correlation.png)
+
+---
+
+## Results
+
+### Summary Dashboard
+
+![Summary Dashboard](figures/training%20results/summary_dashboard.png)
+
+### Stage 1: Regression (Q1)
 
 | Model | MAE | RMSE | R² |
 |-------|-----|------|-----|
 | Linear Regression (Poly + RBF) | 0.4458 | 0.5626 | 0.6384 |
 | Random Forest Regressor | 0.3908 | 0.5167 | 0.6949 |
 | **DNN Regressor** | **0.0581** | **0.1068** | **0.9870** |
+
+![Regression Comparison](figures/training%20results/regression_comparison.png)
 
 **Q1 Answer:** The DNN Regressor vastly outperforms classical models with R²=0.9870, capturing non-linear transaction amount patterns that polynomial/RBF basis expansions cannot.
 
@@ -36,9 +92,11 @@ A two-stage machine learning pipeline for detecting financial fraud in the IEEE-
 | RF Regressor | -0.0330 | 2.79% | 3.50% | 0.80x |
 | **DNN Regressor** | **0.0688** | **8.17%** | **3.50%** | **2.34x** |
 
-**Q2 Answer:** DNN residuals show the strongest fraud correlation. Transactions in the top-10% of residuals have a fraud rate of 8.17% — a 2.34x lift over the baseline 3.5%.
+![Residual Fraud Analysis](figures/training%20results/residual_fraud_analysis.png)
 
-### Stage 2: Classification
+**Q2 Answer:** DNN residuals show the strongest fraud correlation. Transactions in the top-10% of residuals have a fraud rate of 8.17% — a 2.34x lift over the baseline 3.5%. This validates the two-stage pipeline design: regression residuals capture meaningful anomaly signals.
+
+### Stage 2: Classification (Q3)
 
 **Without Anomaly Scores (Base):**
 
@@ -58,9 +116,25 @@ A two-stage machine learning pipeline for detecting financial fraud in the IEEE-
 | **XGBoost** | **0.9481** | **0.6923** | **0.4587** | **0.7234** | **0.5615** |
 | DNN Classifier | 0.9324 | 0.6472 | 0.3923 | 0.7198 | 0.5078 |
 
+![Classification Comparison](figures/training%20results/classification_comparison.png)
+
+![Anomaly Score Impact](figures/training%20results/anomaly_score_impact.png)
+
 **Q3 Answer:** Adding anomaly scores consistently improves all classifiers. Mean AUC-ROC improved from 0.9114 (base) to 0.9150 (+anomaly), Δ=+0.0036. XGBoost achieved the best overall performance with AUC-ROC=0.9481.
 
-### Cross-Validation (5-Fold Stratified)
+### ROC & Precision-Recall Curves
+
+![ROC Curves](figures/training%20results/roc_curves.png)
+
+![PR Curves](figures/training%20results/pr_curves.png)
+
+### Confusion Matrices
+
+![Confusion Matrices](figures/training%20results/confusion_matrices.png)
+
+### Cross-Validation & Hyperparameter Tuning
+
+5-fold stratified cross-validation was performed with grid search over all model hyperparameters.
 
 | Model | Best Score | Best Hyperparameters |
 |-------|-----------|---------------------|
@@ -71,6 +145,12 @@ A two-stage machine learning pipeline for detecting financial fraud in the IEEE-
 | RF Classifier (AUC-ROC) | 0.9212 | n_estimators=300, max_depth=20, min_samples_leaf=10 |
 | XGBoost (AUC-ROC) | 0.9441 | n_estimators=300, max_depth=7, learning_rate=0.05 |
 | DNN Classifier (AUC-ROC) | 0.9265 | hidden_dims=[512,256,128], lr=0.0005, dropout=0.3 |
+
+![CV Model Comparison](figures/training%20results/cv_model_comparison.png)
+
+![Hyperparameter Sensitivity](figures/training%20results/hp_sensitivity_all.png)
+
+---
 
 ## Models
 
@@ -85,12 +165,14 @@ A two-stage machine learning pipeline for detecting financial fraud in the IEEE-
 | Classification | DNN Classifier | PyTorch |
 | Classification | GNN (GraphSAGE) | PyTorch Geometric |
 
+---
+
 ## Setup
 
 ```bash
 # 1. Clone and enter directory
-git clone <your-repo-url>
-cd fraud-detection
+git clone https://github.com/21Mandar/Financial-Fraud-Detection.git
+cd Financial-Fraud-Detection
 
 # 2. Create virtual environment
 python -m venv venv
@@ -124,41 +206,20 @@ python main.py --skip_cv
 python main.py --data_dir /path/to/data
 ```
 
-**Note:** XGBoost may not work on Apple Silicon (M1/M2/M3) due to OpenMP issues. The pipeline will skip it gracefully and continue with the remaining classifiers. To fix, run `brew install libomp`.
+> **Note:** XGBoost may not work on Apple Silicon (M1/M2/M3) due to OpenMP issues. The pipeline will skip it gracefully and continue with the remaining classifiers. To fix, run `brew install libomp`.
+
+---
 
 ## Project Structure
 
 ```
-fraud-detection/
+Financial-Fraud-Detection/
 ├── data/
 │   ├── train_transaction.csv       # ~590K transactions (download from Kaggle)
 │   └── train_identity.csv          # Identity features
 ├── figures/
-│   ├── eda/                        # EDA plots
-│   │   ├── class_distribution.png
-│   │   ├── missing_values.png
-│   │   ├── transaction_amount_by_class.png
-│   │   ├── transaction_amount_kde.png
-│   │   ├── temporal_patterns.png
-│   │   ├── fraud_rate_by_hour.png
-│   │   ├── categorical_fraud_rates.png
-│   │   ├── correlation_heatmap.png
-│   │   └── v_feature_correlation.png
-│   ├── regression_comparison.png
-│   ├── residual_fraud_analysis.png
-│   ├── classification_comparison.png
-│   ├── anomaly_score_impact.png
-│   ├── roc_curves.png
-│   ├── pr_curves.png
-│   ├── confusion_matrices.png
-│   ├── cv_model_comparison.png
-│   ├── hp_sensitivity_all.png
-│   └── summary_dashboard.png
-├── saved_models/
-│   ├── *.joblib                    # sklearn models
-│   ├── *.pt                        # PyTorch models
-│   ├── *_params.json               # Hyperparameters
-│   └── experiment_log.csv          # Full experiment log
+│   ├── eda/                        # Exploratory Data Analysis plots
+│   └── training results/           # Model evaluation plots
 ├── data_preprocessing.py           # Data loading, cleaning, feature engineering
 ├── eda.py                          # Exploratory Data Analysis
 ├── stage1_regression.py            # 3 regressors + anomaly score computation
@@ -170,6 +231,8 @@ fraud-detection/
 ├── requirements.txt
 └── README.md
 ```
+
+---
 
 ## Key Design Decisions
 
