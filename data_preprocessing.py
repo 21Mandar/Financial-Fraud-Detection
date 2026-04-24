@@ -222,6 +222,8 @@ def load_and_preprocess(data_dir='data'):
 
 
 if __name__ == '__main__':
+    import os
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     # Quick test
     result = load_and_preprocess()
     X_tr, X_te, y_c_tr, y_c_te, y_r_tr, y_r_te, fnames, scaler = result
