@@ -16,7 +16,7 @@ Pipeline:
 
 Usage:
     python main.py                         # Full pipeline (with CV)
-    python main.py --data_dir /Users/mandar/Library/Mobile Documents/com~apple~CloudDocs/NEU Docs/NEU Content/CS6140(ML)/Project - Financial Fraud Detection/Financial_Fraud_Detection/data # Custom data directory
+    python main.py --data_dir path/to/data
     python main.py --skip_cv               # Skip cross-validation (faster)
     python main.py --skip_gnn              # Skip GNN (faster)
 """
