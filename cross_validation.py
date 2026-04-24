@@ -671,6 +671,8 @@ def run_cross_validation(X_train, y_cls_train, y_reg_train):
 
 
 if __name__ == '__main__':
+    import os
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     from data_preprocessing import load_and_preprocess
     (X_train, X_test, y_cls_train, y_cls_test,
      y_reg_train, y_reg_test, feature_names, scaler) = load_and_preprocess()
