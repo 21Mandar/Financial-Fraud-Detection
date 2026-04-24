@@ -537,6 +537,8 @@ def run_stage2(X_train, X_test, y_cls_train, y_cls_test,
 
 
 if __name__ == '__main__':
+    import os
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     from data_preprocessing import load_and_preprocess
     from stage1_regression import run_stage1
 
