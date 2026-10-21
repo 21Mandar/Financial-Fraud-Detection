@@ -24,6 +24,13 @@ A two-stage machine learning pipeline for detecting financial fraud in the IEEE-
 - **Stage 1 (Regression):** Predict expected transaction amounts → compute residuals as anomaly scores
 - **Stage 2 (Classification):** Detect fraud using original features augmented with anomaly scores
 
+**At a glance**
+
+- Two-stage pipeline on 590K+ structured transaction records: regression models predict expected values, and deviations from them are flagged as risk signals.
+- Five classifiers are implemented and compared: Logistic Regression, Random Forest, XGBoost, a deep neural network (PyTorch), and a graph neural network (GraphSAGE, PyTorch Geometric), on an imbalanced dataset (3.5% fraud).
+- Best reported result: XGBoost at **0.948 AUC-ROC** (with anomaly scores). The GNN's results are not included in the tables below — see [Known limitations](#known-limitations).
+- SHAP (`evaluation.py`) is used for interpretability on the best tree model; the generated plots are not committed to this repository.
+
 ## Research Questions
 
 1. **Q1:** Which regressor best predicts expected transaction amounts?
@@ -95,6 +102,8 @@ The top V-features show high multicollinearity (V257-V246: r=0.91), suggesting d
 
 ![Regression Comparison](figures/training%20results/regression_comparison.png)
 
+> **Caveat:** the DNN regressor's R² of 0.987 is inflated by target leakage — see [Known limitations](#known-limitations). Treat Q1 and the residual analysis below accordingly.
+
 **Q1 Answer:** The DNN Regressor vastly outperforms classical models with R²=0.9870, capturing non-linear transaction amount patterns that polynomial/RBF basis expansions cannot.
 
 ### Residual-Fraud Correlation (Q2)
@@ -133,6 +142,8 @@ The top V-features show high multicollinearity (V257-V246: r=0.91), suggesting d
 
 ![Anomaly Score Impact](figures/training%20results/anomaly_score_impact.png)
 
+> The GNN (GraphSAGE) is implemented in `stage2_classification.py`, but its results are not in the tables above: it trains on a stratified 100K-node subsample of a feature-similarity k-NN graph, so its test rows differ from the other models'. Q4 is therefore not answered by these results.
+
 **Q3 Answer:** Adding anomaly scores consistently improves all classifiers. Mean AUC-ROC improved from 0.9114 (base) to 0.9150 (+anomaly), Δ=+0.0036. XGBoost achieved the best overall performance with AUC-ROC=0.9481.
 
 ### ROC & Precision-Recall Curves
@@ -164,6 +175,18 @@ The top V-features show high multicollinearity (V257-V246: r=0.91), suggesting d
 ![Hyperparameter Sensitivity](figures/training%20results/hp_sensitivity_all.png)
 
 ---
+
+## Known limitations
+
+Found on review of the code; the pipeline has not been re-run since, so the numbers above are unchanged.
+
+- **Target leakage in Stage 1.** `card1_TransactionAmt_mean` and `card1_TransactionAmt_diff` (amount minus the card's mean) are left in the regression inputs, so the target amount can be recovered from them. This explains the DNN's 0.987 R² versus 0.70 for Random Forest. The classifiers may use these features; the regressors should not.
+- **Anomaly scores are in-sample at training time.** Stage 2 trains on Stage 1 residuals from models fit on the same rows, but is evaluated on out-of-sample residuals. Out-of-fold residuals would remove the mismatch.
+- **Split and fitting.** The train/test split is random and stratified, not time-based, on time-ordered data. The imputer, encoders, and per-card aggregates are fit before the split.
+- **Test-set model selection.** The DNN and GNN pick their best epoch using the test set, so their scores are slightly optimistic.
+- **Cross-validation results are not applied.** The grid search runs and is reported, but its best hyperparameters are only logged; the final models use fixed settings in the code.
+- **Threshold.** Precision, recall, and F1 use a 0.5 cutoff on class-weighted models, which favors recall. No threshold tuning was done.
+- **GNN graph.** The graph is built from feature-similarity k-NN, not from users, cards, and devices as originally proposed.
 
 ## Models
 
